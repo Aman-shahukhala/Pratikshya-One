@@ -33,7 +33,7 @@ const footerLinks = [
 
 export default function Footer() {
   return (
-    <footer id="contact" className="relative border-t border-slate-200 bg-white overflow-hidden text-slate-900">
+    <footer id="contact" className="relative border-t border-slate-200 bg-white overflow-hidden text-slate-900 scroll-mt-20">
       <div className="relative max-w-7xl mx-auto px-6 sm:px-12 lg:px-16 py-16 sm:py-20">
         {/* CTA (SCFO Project Inquiry Style) */}
         <Reveal>

@@ -14,7 +14,7 @@ const platform = [
 
 export default function TechnologySection() {
   return (
-    <section id="technology" className="relative py-20 lg:py-28 overflow-hidden bg-white border-t border-slate-200/80">
+    <section id="technology" className="relative py-20 lg:py-28 overflow-hidden bg-white border-t border-slate-200/80 scroll-mt-20">
       <div className="relative max-w-7xl mx-auto px-6 sm:px-12 lg:px-16">
         <Reveal>
           <div className="text-center mb-16">

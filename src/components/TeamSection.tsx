@@ -13,10 +13,10 @@ const team = [
 ];
 
 export default function TeamSection() {
-  const imgRef = useParallax<HTMLDivElement>(0.1);
+  const imgRef = useParallax<HTMLImageElement>(0.12);
 
   return (
-    <section id="team" className="relative py-20 lg:py-28 overflow-hidden bg-white border-t border-slate-200/80">
+    <section id="team" className="relative py-20 lg:py-28 overflow-hidden bg-white border-t border-slate-200/80 scroll-mt-20">
       <div className="max-w-7xl mx-auto px-6 sm:px-12 lg:px-16">
         <Reveal>
           <div className="text-center mb-16">
@@ -33,11 +33,12 @@ export default function TeamSection() {
         {/* Team image */}
         <Reveal variant="scale">
           <div className="relative rounded-2xl overflow-hidden mb-16 border border-slate-200 shadow-md bg-slate-900">
-            <div ref={imgRef} className="parallax overflow-hidden">
+            <div className="overflow-hidden h-[350px] sm:h-[450px]">
               <img
+                ref={imgRef}
                 src={TEAM_IMAGE}
                 alt="Engineering team at work"
-                className="w-full h-[350px] sm:h-[450px] object-cover opacity-60"
+                className="w-full h-full object-cover opacity-60 scale-110 will-change-transform"
               />
             </div>
             <div className="absolute inset-0 bg-black/40" />

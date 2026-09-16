@@ -48,7 +48,7 @@ export default function ScrollFrameSequence({
       const img = new Image();
       img.src = getFrameUrl(i);
 
-      if ('decode' in img) {
+      if (typeof img.decode === 'function') {
         img.decode()
           .then(() => {
             if (!mounted) return;
@@ -63,7 +63,7 @@ export default function ScrollFrameSequence({
             };
           });
       } else {
-        img.onload = () => {
+        (img as HTMLImageElement).onload = () => {
           if (!mounted) return;
           loadedCount++;
           if (loadedCount >= 1 && !firstLoaded) setFirstLoaded(true);

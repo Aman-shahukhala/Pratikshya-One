@@ -61,7 +61,7 @@ function StatCard({
 
 export default function StatsSection() {
   return (
-    <section id="impact" className="relative py-20 lg:py-28 overflow-hidden bg-slate-50/80 backdrop-blur-sm border-t border-slate-200/80">
+    <section id="impact" className="relative py-20 lg:py-28 overflow-hidden bg-slate-50/80 backdrop-blur-sm border-t border-slate-200/80 scroll-mt-20">
       <div className="relative max-w-7xl mx-auto px-6 sm:px-12 lg:px-16">
         <Reveal>
           <div className="text-center mb-16">

@@ -43,7 +43,7 @@ export function useScrollReveal<T extends HTMLElement = HTMLDivElement>(
   return { ref, visible };
 }
 
-export function useParallax<T extends HTMLElement = HTMLDivElement>(speed = 0.3) {
+export function useParallax<T extends HTMLElement = HTMLElement>(speed = 0.2) {
   const ref = useRef<T>(null);
   const offset = useRef(0);
 
@@ -58,11 +58,15 @@ export function useParallax<T extends HTMLElement = HTMLDivElement>(speed = 0.3)
       rafId = requestAnimationFrame(() => {
         const rect = el.getBoundingClientRect();
         const windowHeight = window.innerHeight;
-        if (rect.top < windowHeight && rect.bottom > 0) {
-          const center = rect.top + rect.height / 2;
+        // Check if element is anywhere near viewport
+        if (rect.top < windowHeight + 100 && rect.bottom > -100) {
+          // Subtract current offset to measure untransformed layout position
+          const untransformedTop = rect.top - offset.current;
+          const center = untransformedTop + rect.height / 2;
           const distance = center - windowHeight / 2;
-          offset.current = distance * speed * -1;
-          el.style.transform = `translateY(${offset.current}px)`;
+          const targetOffset = Math.round(distance * speed * -1 * 10) / 10;
+          offset.current = targetOffset;
+          el.style.transform = `translate3d(0, ${targetOffset}px, 0)`;
         }
       });
     };

@@ -23,10 +23,10 @@ const techStack = [
 ];
 
 export default function HealthSection() {
-  const imgRef = useParallax<HTMLDivElement>(0.1);
+  const imgRef = useParallax<HTMLImageElement>(0.12);
 
   return (
-    <section id="health" className="relative py-20 lg:py-28 overflow-hidden bg-white border-t border-slate-200/80">
+    <section id="health" className="relative py-20 lg:py-28 overflow-hidden bg-white border-t border-slate-200/80 scroll-mt-20">
       <div className="max-w-7xl mx-auto px-6 sm:px-12 lg:px-16">
         {/* Section header */}
         <Reveal>
@@ -47,11 +47,12 @@ export default function HealthSection() {
         {/* Cinematic image showcase */}
         <Reveal variant="scale">
           <div className="relative rounded-2xl overflow-hidden mb-20 border border-slate-200 shadow-md bg-white">
-            <div ref={imgRef} className="parallax overflow-hidden h-[420px] sm:h-[500px]">
+            <div className="overflow-hidden h-[420px] sm:h-[500px]">
               <img
+                ref={imgRef}
                 src={HEALTH_IMAGE}
                 alt="Pratikshya One prosthetic arm"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover scale-110 will-change-transform"
               />
             </div>
             <div className="p-8 sm:p-10 bg-white border-t border-slate-200">

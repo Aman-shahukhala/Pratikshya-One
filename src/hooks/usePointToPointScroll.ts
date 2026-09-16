@@ -1,61 +1,82 @@
 import { useEffect, useRef } from 'react';
 
+interface SectionInfo {
+  id: string;
+  top: number;
+  bottom: number;
+  height: number;
+  isTall: boolean;
+  el: HTMLElement;
+}
+
+const NAV_OFFSET = 64; // Height of fixed navbar
+
 export function usePointToPointScroll(sectionIds: string[], enabled = true) {
   const isScrollingRef = useRef(false);
-  const touchStartYRef = useRef(0);
-  const lastScrollTimeRef = useRef(0);
+  const cooldownUntilRef = useRef(0);
   const rafIdRef = useRef<number>(0);
 
   useEffect(() => {
     if (!enabled) return;
 
-    const getSectionOffsets = () => {
+    // On touch / mobile devices, preserve 100% native momentum scrolling
+    const isTouchDevice =
+      typeof window !== 'undefined' &&
+      (window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 768);
+
+    if (isTouchDevice) {
+      return;
+    }
+
+    const getSectionInfos = (): SectionInfo[] => {
+      const scrollY = window.scrollY;
       return sectionIds
         .map((id) => {
           const el = document.getElementById(id);
           if (!el) return null;
-          // getBoundingClientRect gives viewport-relative position;
-          // adding scrollY converts to absolute document position,
-          // regardless of positioned ancestor (offsetParent) differences.
-          const top = el.getBoundingClientRect().top + window.scrollY;
-          return { id, top, el };
+          const rect = el.getBoundingClientRect();
+          const top = Math.round(rect.top + scrollY);
+          const height = el.offsetHeight;
+          const bottom = top + height;
+          // Sections taller than viewport + margin are considered tall content sections
+          const isTall = height > window.innerHeight + 60;
+          return { id, top, bottom, height, isTall, el };
         })
-        .filter(Boolean) as { id: string; top: number; el: HTMLElement }[];
+        .filter(Boolean) as SectionInfo[];
     };
 
-    const getCurrentIndex = (direction?: 'up' | 'down') => {
-      const sections = getSectionOffsets();
-      if (sections.length === 0) return 0;
+    const getCurrentSectionIndex = (sections: SectionInfo[]): number => {
       const scrollY = window.scrollY;
+      const viewportCenter = scrollY + window.innerHeight / 2;
 
-      // Find the last section whose top we've scrolled past (or are at)
-      let currentIdx = 0;
       for (let i = 0; i < sections.length; i++) {
-        if (scrollY >= sections[i].top - 5) {
-          currentIdx = i;
+        const s = sections[i];
+        if (viewportCenter >= s.top && viewportCenter <= s.bottom) {
+          return i;
         }
       }
 
-      // If we're mid-section and scrolling down, treat current as the section we're in
-      // If scrolling up, same — just step back one from currentIdx
-      return currentIdx;
+      for (let i = sections.length - 1; i >= 0; i--) {
+        if (scrollY >= sections[i].top - 100) {
+          return i;
+        }
+      }
+      return 0;
     };
 
-    const smoothScrollTo = (targetY: number, duration = 600) => {
+    const smoothScrollTo = (targetY: number, duration = 550) => {
       const startY = window.scrollY;
       const diff = targetY - startY;
-      if (Math.abs(diff) < 2) {
+      if (Math.abs(diff) < 3) {
         isScrollingRef.current = false;
         return;
       }
 
       isScrollingRef.current = true;
-      lastScrollTimeRef.current = Date.now();
       cancelAnimationFrame(rafIdRef.current);
 
       const startTime = performance.now();
-
-      // Smooth custom quartic easing (silky start, gentle deceleration landing)
+      // Silky quartic ease-out
       const easeOutQuart = (x: number): number => 1 - Math.pow(1 - x, 4);
 
       const animate = (now: number) => {
@@ -63,104 +84,143 @@ export function usePointToPointScroll(sectionIds: string[], enabled = true) {
         const progress = Math.min(elapsed / duration, 1);
         const eased = easeOutQuart(progress);
 
-        window.scrollTo(0, startY + diff * eased);
+        window.scrollTo(0, Math.round(startY + diff * eased));
 
         if (progress < 1) {
           rafIdRef.current = requestAnimationFrame(animate);
         } else {
           window.scrollTo(0, targetY);
-          // Cooldown to absorb inertial tail events from trackpads
-          setTimeout(() => {
-            isScrollingRef.current = false;
-          }, 150);
+          isScrollingRef.current = false;
+          // Short cooldown to absorb residual trackpad inertia ticks
+          cooldownUntilRef.current = Date.now() + 180;
         }
       };
 
       rafIdRef.current = requestAnimationFrame(animate);
     };
 
-    const scrollToSection = (index: number) => {
-      const sections = getSectionOffsets();
+    const scrollToSection = (index: number, position: 'top' | 'bottom' = 'top') => {
+      const sections = getSectionInfos();
       if (index < 0 || index >= sections.length) return;
 
       const target = sections[index];
       if (!target) return;
 
-      smoothScrollTo(target.top, 600);
+      const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+
+      let targetY: number;
+      if (position === 'bottom') {
+        targetY = target.bottom - window.innerHeight;
+      } else {
+        targetY = index === 0 ? 0 : target.top - NAV_OFFSET;
+      }
+
+      targetY = Math.max(0, Math.min(targetY, maxScroll));
+      smoothScrollTo(targetY);
     };
 
     const handleWheel = (e: WheelEvent) => {
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) return;
 
-      e.preventDefault();
-
-      const now = Date.now();
-      if (isScrollingRef.current || now - lastScrollTimeRef.current < 650) {
+      // While programmatic animation is running, prevent conflicting wheel events
+      if (isScrollingRef.current) {
+        e.preventDefault();
         return;
       }
 
-      if (Math.abs(e.deltaY) < 16) return;
+      // Ignore low-velocity residual events during landing cooldown
+      if (Date.now() < cooldownUntilRef.current) {
+        if (Math.abs(e.deltaY) < 40) {
+          e.preventDefault();
+          return;
+        }
+      }
 
-      const currentIdx = getCurrentIndex();
+      const sections = getSectionInfos();
+      if (sections.length === 0) return;
+
+      const currentIdx = getCurrentSectionIndex(sections);
+      const currentSection = sections[currentIdx];
+      const scrollY = window.scrollY;
+      const viewportBottom = scrollY + window.innerHeight;
+
+      // Handle tall content sections (e.g. Health, Technology, Investors)
+      if (currentSection.isTall) {
+        const isAtTop = scrollY <= currentSection.top - NAV_OFFSET + 20;
+        const isAtBottom = viewportBottom >= currentSection.bottom - 20;
+
+        if (e.deltaY > 0) {
+          // Scrolling down: if not at the bottom of the section, allow native scroll
+          if (!isAtBottom) {
+            return;
+          }
+          // At bottom and scrolling down deliberately -> snap to next section
+          if (Math.abs(e.deltaY) < 20) return;
+          if (currentIdx < sections.length - 1) {
+            e.preventDefault();
+            scrollToSection(currentIdx + 1, 'top');
+          }
+        } else if (e.deltaY < 0) {
+          // Scrolling up: if not at the top of the section, allow native scroll
+          if (!isAtTop) {
+            return;
+          }
+          // At top and scrolling up deliberately -> snap to previous section
+          if (Math.abs(e.deltaY) < 20) return;
+          if (currentIdx > 0) {
+            e.preventDefault();
+            const prevSection = sections[currentIdx - 1];
+            scrollToSection(currentIdx - 1, prevSection.isTall ? 'bottom' : 'top');
+          }
+        }
+        return;
+      }
+
+      // Handle slide-like showcase sections (~100vh)
+      if (Math.abs(e.deltaY) < 18) return;
 
       if (e.deltaY > 0) {
-        scrollToSection(currentIdx + 1);
-      } else {
-        scrollToSection(currentIdx - 1);
-      }
-    };
-
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStartYRef.current = e.touches[0].clientY;
-    };
-
-    const handleTouchEnd = (e: TouchEvent) => {
-      const touchEndY = e.changedTouches[0].clientY;
-      const deltaY = touchStartYRef.current - touchEndY;
-
-      if (Math.abs(deltaY) < 35) return;
-
-      const now = Date.now();
-      if (isScrollingRef.current || now - lastScrollTimeRef.current < 650) return;
-
-      const currentIdx = getCurrentIndex();
-      if (deltaY > 0) {
-        scrollToSection(currentIdx + 1);
-      } else {
-        scrollToSection(currentIdx - 1);
+        if (currentIdx < sections.length - 1) {
+          e.preventDefault();
+          scrollToSection(currentIdx + 1, 'top');
+        }
+      } else if (e.deltaY < 0) {
+        if (currentIdx > 0) {
+          e.preventDefault();
+          const prevSection = sections[currentIdx - 1];
+          scrollToSection(currentIdx - 1, prevSection.isTall ? 'bottom' : 'top');
+        }
       }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) return;
 
-      const currentIdx = getCurrentIndex();
+      const sections = getSectionInfos();
+      if (sections.length === 0) return;
+      const currentIdx = getCurrentSectionIndex(sections);
 
-      if (['ArrowDown', 'PageDown', ' '].includes(e.key) || e.key.toLowerCase() === 's') {
+      if (['PageDown', ' '].includes(e.key)) {
         e.preventDefault();
-        scrollToSection(currentIdx + 1);
-      } else if (['ArrowUp', 'PageUp'].includes(e.key) || e.key.toLowerCase() === 'w') {
+        scrollToSection(currentIdx + 1, 'top');
+      } else if (['PageUp'].includes(e.key)) {
         e.preventDefault();
-        scrollToSection(currentIdx - 1);
+        scrollToSection(currentIdx - 1, 'top');
       } else if (e.key === 'Home') {
         e.preventDefault();
-        scrollToSection(0);
+        scrollToSection(0, 'top');
       } else if (e.key === 'End') {
         e.preventDefault();
-        scrollToSection(sectionIds.length - 1);
+        scrollToSection(sections.length - 1, 'top');
       }
     };
 
     window.addEventListener('wheel', handleWheel, { passive: false });
-    window.addEventListener('touchstart', handleTouchStart, { passive: true });
-    window.addEventListener('touchend', handleTouchEnd, { passive: true });
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
       cancelAnimationFrame(rafIdRef.current);
       window.removeEventListener('wheel', handleWheel);
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchend', handleTouchEnd);
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [sectionIds, enabled]);

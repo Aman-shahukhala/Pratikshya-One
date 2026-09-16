@@ -3,7 +3,7 @@ import Reveal from './Reveal';
 
 export default function Mission() {
   return (
-    <section id="mission" className="relative py-20 lg:py-28 overflow-hidden bg-slate-50/80 backdrop-blur-sm border-t border-slate-200/80">
+    <section id="mission" className="relative py-20 lg:py-28 overflow-hidden bg-slate-50/80 backdrop-blur-sm border-t border-slate-200/80 scroll-mt-20">
       <div className="relative max-w-5xl mx-auto px-6 sm:px-12 text-center">
         <Reveal>
           <p className="text-[11px] font-mono tracking-[0.25em] uppercase text-slate-400 mb-4 font-semibold">
