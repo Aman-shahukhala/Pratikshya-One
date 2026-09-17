@@ -35,7 +35,7 @@ export default function App() {
       {/* 3D Frame Sequence Scrubber (Layer z-[10]) - Dynamic left/right positioning */}
       <ScrollFrameSequence
         frameCount={120}
-        getFrameUrl={(index) => `/frames/frame_${String(index).padStart(4, '0')}.jpg`}
+        getFrameUrl={(index) => `${import.meta.env.BASE_URL}frames/frame_${String(index).padStart(4, '0')}.jpg`}
       />
 
       <Navbar />

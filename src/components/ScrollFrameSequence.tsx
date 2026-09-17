@@ -9,12 +9,16 @@ interface ScrollFrameSequenceProps {
 // Continuous smooth cubic easing between keypoints
 function getContinuousTargetX(progress: number): number {
   // Keyframe checkpoints:
-  // p = 0.00 -> 0.65 (Hero - right)
-  // p = 0.33 -> 0.28 (Stage 1 Neural EMG - left)
-  // p = 0.66 -> 0.70 (Stage 2 14-DoF Actuation - right)
-  // p = 1.00 -> 0.30 (Stage 3 Modular Socket - left)
+  // p = 0.00 -> 0.08: Halo fades out in place, Arm stays fixed at 0.65
+  // p = 0.08 -> 0.333: Arm slides from 0.65 -> 0.28 (Stage 1 Neural EMG)
+  // p = 0.333 -> 0.666: Arm slides from 0.28 -> 0.70 (Stage 2 Kinematics)
+  // p = 0.666 -> 1.000: Arm slides from 0.70 -> 0.30 (Stage 3 Modular Socket)
+  const FADE_THRESHOLD = 0.08;
   if (progress <= 0.333) {
-    const t = progress / 0.333;
+    if (progress <= FADE_THRESHOLD) {
+      return 0.65;
+    }
+    const t = (progress - FADE_THRESHOLD) / (0.333 - FADE_THRESHOLD);
     const ease = t * t * (3 - 2 * t);
     return 0.65 + (0.28 - 0.65) * ease;
   } else if (progress <= 0.666) {
@@ -30,13 +34,55 @@ function getContinuousTargetX(progress: number): number {
 
 export default function ScrollFrameSequence({
   frameCount = 120,
-  getFrameUrl = (index) => `/frames/frame_${String(index).padStart(4, '0')}.jpg`,
+  getFrameUrl = (index) => `${import.meta.env.BASE_URL}frames/frame_${String(index).padStart(4, '0')}.jpg`,
   className = 'fixed inset-0 pointer-events-none z-10',
 }: ScrollFrameSequenceProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const keyedCacheRef = useRef<Map<number, HTMLCanvasElement>>(new Map());
   const imagesRef = useRef<HTMLImageElement[]>([]);
   const lastDrawnImgRef = useRef<HTMLImageElement | null>(null);
   const [firstLoaded, setFirstLoaded] = useState(false);
+
+  // Helper to get or lazily compute 100% resolution keyed canvas once per frame
+  const getKeyedCanvas = (img: HTMLImageElement, frameIdx: number): HTMLCanvasElement => {
+    const cache = keyedCacheRef.current;
+    const existing = cache.get(frameIdx);
+    if (existing) return existing;
+
+    const w = img.naturalWidth || 1920;
+    const h = img.naturalHeight || 1080;
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    const cCtx = c.getContext('2d', { willReadFrequently: true });
+    if (!cCtx) return c;
+
+    cCtx.drawImage(img, 0, 0, w, h);
+    const imgData = cCtx.getImageData(0, 0, w, h);
+    const data32 = new Uint32Array(imgData.data.buffer);
+    const len = data32.length;
+
+    for (let i = 0; i < len; i++) {
+      const p = data32[i];
+      const r = p & 0xff;
+      const g = (p >> 8) & 0xff;
+      const b = (p >> 16) & 0xff;
+
+      if (r > 235 && g > 235 && b > 235) {
+        const minVal = Math.min(r, g, b);
+        if (minVal >= 252) {
+          data32[i] = 0;
+        } else {
+          const alpha = Math.round(((252 - minVal) / 17) * 255);
+          data32[i] = (p & 0x00ffffff) | (alpha << 24);
+        }
+      }
+    }
+
+    cCtx.putImageData(imgData, 0, 0);
+    cache.set(frameIdx, c);
+    return c;
+  };
 
   // Pre-load and pre-decode all 120 frames into memory
   useEffect(() => {
@@ -194,10 +240,48 @@ export default function ScrollFrameSequence({
           const drawX = window.innerWidth * activeXRatio - drawWidth / 2;
           const drawY = (window.innerHeight - drawHeight) / 2 + (isMobile ? 0 : 20);
 
-          ctx.save();
-          ctx.globalAlpha = Math.max(0, Math.min(currentOpacity, 1));
-          ctx.drawImage(activeImg, drawX, drawY, drawWidth, drawHeight);
-          ctx.restore();
+          // 1. Draw Halo Backdrop directly on canvas behind the 3D arm (Hero stage)
+          // Halo fades out completely in-place before the stage/arm slide begins (0.0 -> 0.08)
+          const haloProgress = Math.min(Math.max(currentFraction / 0.08, 0), 1);
+          const haloOpacity = Math.max(0, 1 - haloProgress) * currentOpacity;
+
+          if (haloOpacity > 0.01) {
+            // Static Hero position: halo stays in place and does not slide sideways
+            const heroXRatio = isMobile ? 0.52 : 0.67;
+            const haloCenterX = window.innerWidth * heroXRatio;
+            const haloCenterY = drawY + drawHeight * 0.48;
+            const haloRadius = Math.round(drawHeight * 0.4031);
+
+            ctx.save();
+            ctx.globalAlpha = haloOpacity;
+
+            // Clean Minimal Single Solid Halo Ring
+            ctx.beginPath();
+            ctx.arc(haloCenterX, haloCenterY, haloRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = Math.max(18, Math.round(drawHeight * 0.03));
+            ctx.stroke();
+
+            ctx.restore();
+          }
+
+          // 2. Draw 3D Arm
+          if (haloOpacity > 0.01) {
+            // Instant 120fps GPU texture blit (cached offscreen canvas, 0ms CPU in render loop)
+            const keyedCanvas = getKeyedCanvas(activeImg, frameIndex);
+            ctx.save();
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.globalAlpha = Math.max(0, Math.min(currentOpacity, 1));
+            ctx.drawImage(keyedCanvas, drawX, drawY, drawWidth, drawHeight);
+            ctx.restore();
+          } else {
+            // Direct draw for smooth 120fps when halo is faded out
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, Math.min(currentOpacity, 1));
+            ctx.drawImage(activeImg, drawX, drawY, drawWidth, drawHeight);
+            ctx.restore();
+          }
         }
       }
     };

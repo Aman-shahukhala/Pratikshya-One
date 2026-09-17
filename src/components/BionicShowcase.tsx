@@ -3,7 +3,6 @@ import { Activity, Brain, Cpu, ShieldCheck, Battery, Sparkles } from 'lucide-rea
 
 export default function BionicShowcase() {
   const [cursorVisible, setCursorVisible] = useState(true);
-  const haloRef = useRef<HTMLDivElement>(null);
   const heroLayerRef = useRef<HTMLDivElement>(null);
   const neuralLayerRef = useRef<HTMLDivElement>(null);
   const artLayerRef = useRef<HTMLDivElement>(null);
@@ -42,12 +41,21 @@ export default function BionicShowcase() {
       const slideDist = Math.min(winW * 0.55, 520);
 
       // =========================================================================
-      // SLIDE 0 (HERO): Slides pure horizontal to the left during fraction 0.0 -> 1.0
+      // SLIDE 0 (HERO): Holds during halo fade (0.0 -> 0.25), then slides left during 0.25 -> 1.0
       // =========================================================================
-      const t0 = Math.min(Math.max(currentFraction, 0), 1);
-      const ease0 = t0 * t0 * (3 - 2 * t0); // Smoothstep curve
-      const heroSlideX = ease0 * slideDist;
-      const heroOpacity = Math.max(0, 1 - ease0 * 1.3);
+      const FADE_CUTOFF = 0.25;
+      let heroSlideX = 0;
+      let heroOpacity = 1;
+
+      if (currentFraction <= FADE_CUTOFF) {
+        heroSlideX = 0;
+        heroOpacity = 1;
+      } else {
+        const t0 = Math.min((currentFraction - FADE_CUTOFF) / (1.0 - FADE_CUTOFF), 1);
+        const ease0 = t0 * t0 * (3 - 2 * t0);
+        heroSlideX = ease0 * slideDist;
+        heroOpacity = Math.max(0, 1 - ease0 * 1.3);
+      }
 
       if (heroLayerRef.current) {
         heroLayerRef.current.style.transform = `translate3d(-${heroSlideX.toFixed(1)}px, 0, 0)`;
@@ -57,14 +65,16 @@ export default function BionicShowcase() {
       }
 
       // =========================================================================
-      // SLIDE 1 (NEURAL EMG): Slides in from the right during 0.0 -> 1.0, exits during 1.0 -> 2.0
+      // SLIDE 1 (NEURAL EMG): Holds offscreen during halo fade, enters during 0.25 -> 1.0
       // =========================================================================
       let neuralSlideX = 0;
       let neuralOpacity = 0;
 
-      if (currentFraction <= 1.0) {
-        // Entering from right
-        const enterT = Math.min(Math.max(currentFraction, 0), 1);
+      if (currentFraction <= FADE_CUTOFF) {
+        neuralSlideX = slideDist;
+        neuralOpacity = 0;
+      } else if (currentFraction <= 1.0) {
+        const enterT = Math.min((currentFraction - FADE_CUTOFF) / (1.0 - FADE_CUTOFF), 1);
         const enterEase = enterT * enterT * (3 - 2 * enterT);
         neuralSlideX = (1 - enterEase) * slideDist;
         neuralOpacity = Math.min(1, enterEase * 1.35);
@@ -133,12 +143,6 @@ export default function BionicShowcase() {
         socketLayerRef.current.style.pointerEvents = socketOpacity > 0.1 ? 'auto' : 'none';
         socketLayerRef.current.style.visibility = socketOpacity > 0.01 ? 'visible' : 'hidden';
       }
-
-      // Halo Glyph fade
-      if (haloRef.current) {
-        const haloOpacity = Math.max(0, 1 - ease0 * 1.6);
-        haloRef.current.style.opacity = haloOpacity.toFixed(3);
-      }
     };
 
     rafId = requestAnimationFrame(render);
@@ -161,22 +165,6 @@ export default function BionicShowcase() {
           STICKY PRESENTATION VIEWPORT: Locked to screen, 0px vertical movement
       ========================================================================= */}
       <div className="sticky top-0 h-screen w-full overflow-hidden">
-        {/* Halo Glyph — centered on initial 3D hand position */}
-        <div
-          ref={haloRef}
-          className="pointer-events-none z-[5] fixed"
-          style={{
-            left: '66%',
-            top: '55%',
-            transform: 'translate(-50%, -50%)',
-            width: 'min(54vw, 640px)',
-            height: 'min(54vw, 640px)',
-            transition: 'opacity 0.1s linear',
-          }}
-        >
-          <div className="absolute inset-0 rounded-full border-[18px] border-slate-300/40" />
-        </div>
-
         {/* =========================================================================
             STAGE 0: HERO OVERVIEW (3D Arm: Right ~65%, Content on Left)
         ========================================================================= */}
