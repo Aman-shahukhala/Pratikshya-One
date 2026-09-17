@@ -41,20 +41,39 @@ export default function BionicShowcase() {
       const slideDist = Math.min(winW * 0.55, 520);
 
       // =========================================================================
-      // SLIDE 0 (HERO): Holds during halo fade (0.0 -> 0.25), then slides left during 0.25 -> 1.0
+      // STAGE 0 (HERO) -> STAGE 1 (NEURAL EMG)
+      // Phase 1 (0.00 -> 0.20): Halo fades out in place. Hero text & 3D Arm hold still.
+      // Phase 2 (0.20 -> 1.00): Hero text exits left, Neural text enters from right, 3D arm slides.
       // =========================================================================
-      const FADE_CUTOFF = 0.25;
+      const FADE_CUTOFF = 0.20;
+
       let heroSlideX = 0;
-      let heroOpacity = 1;
+      let heroOpacity = 0;
+      let neuralSlideX = slideDist;
+      let neuralOpacity = 0;
 
       if (currentFraction <= FADE_CUTOFF) {
+        // Holding still while Halo fades out
         heroSlideX = 0;
         heroOpacity = 1;
-      } else {
-        const t0 = Math.min((currentFraction - FADE_CUTOFF) / (1.0 - FADE_CUTOFF), 1);
-        const ease0 = t0 * t0 * (3 - 2 * t0);
-        heroSlideX = ease0 * slideDist;
-        heroOpacity = Math.max(0, 1 - ease0 * 1.3);
+        neuralSlideX = slideDist;
+        neuralOpacity = 0;
+      } else if (currentFraction <= 1.0) {
+        // Synchronized movement phase
+        const moveT = (currentFraction - FADE_CUTOFF) / (1.0 - FADE_CUTOFF);
+        const ease = moveT * moveT * (3 - 2 * moveT);
+
+        heroSlideX = ease * slideDist;
+        heroOpacity = Math.max(0, 1 - ease * 1.35);
+
+        neuralSlideX = (1 - ease) * slideDist;
+        neuralOpacity = Math.min(1, ease * 1.35);
+      } else if (currentFraction <= 2.0) {
+        // Exiting as user scrolls to Stage 2
+        const exitT = Math.min(Math.max(currentFraction - 1.0, 0), 1);
+        const exitEase = exitT * exitT * (3 - 2 * exitT);
+        neuralSlideX = exitEase * (slideDist * 0.5);
+        neuralOpacity = Math.max(0, 1 - exitEase * 1.35);
       }
 
       if (heroLayerRef.current) {
@@ -62,28 +81,6 @@ export default function BionicShowcase() {
         heroLayerRef.current.style.opacity = heroOpacity.toFixed(3);
         heroLayerRef.current.style.pointerEvents = heroOpacity > 0.1 ? 'auto' : 'none';
         heroLayerRef.current.style.visibility = heroOpacity > 0.01 ? 'visible' : 'hidden';
-      }
-
-      // =========================================================================
-      // SLIDE 1 (NEURAL EMG): Holds offscreen during halo fade, enters during 0.25 -> 1.0
-      // =========================================================================
-      let neuralSlideX = 0;
-      let neuralOpacity = 0;
-
-      if (currentFraction <= FADE_CUTOFF) {
-        neuralSlideX = slideDist;
-        neuralOpacity = 0;
-      } else if (currentFraction <= 1.0) {
-        const enterT = Math.min((currentFraction - FADE_CUTOFF) / (1.0 - FADE_CUTOFF), 1);
-        const enterEase = enterT * enterT * (3 - 2 * enterT);
-        neuralSlideX = (1 - enterEase) * slideDist;
-        neuralOpacity = Math.min(1, enterEase * 1.35);
-      } else {
-        // Exiting to left as user moves towards Slide 2
-        const exitT = Math.min(Math.max(currentFraction - 1.0, 0), 1);
-        const exitEase = exitT * exitT * (3 - 2 * exitT);
-        neuralSlideX = -exitEase * (slideDist * 0.5);
-        neuralOpacity = Math.max(0, 1 - exitEase * 1.35);
       }
 
       if (neuralLayerRef.current) {
@@ -94,7 +91,7 @@ export default function BionicShowcase() {
       }
 
       // =========================================================================
-      // SLIDE 2 (ACTUATION): Enters from left during 1.0 -> 2.0, exits during 2.0 -> 3.0
+      // SLIDE 2 (ACTUATION): Left side, enters from left (1.0 -> 2.0), exits to left (2.0 -> 3.0)
       // =========================================================================
       let artSlideX = 0;
       let artOpacity = 0;
@@ -122,7 +119,7 @@ export default function BionicShowcase() {
       }
 
       // =========================================================================
-      // SLIDE 3 (SOCKET & HAPTICS): Enters from right during 2.0 -> 3.0
+      // SLIDE 3 (SOCKET & HAPTICS): Right side, enters from right (2.0 -> 3.0)
       // =========================================================================
       let socketSlideX = 0;
       let socketOpacity = 0;

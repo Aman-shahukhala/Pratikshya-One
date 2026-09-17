@@ -6,149 +6,176 @@ interface ScrollFrameSequenceProps {
   className?: string;
 }
 
+const FADE_CUTOFF_PROG = 0.20 / 3.0; // 0.066667
+
 // Continuous smooth cubic easing between keypoints
 function getContinuousTargetX(progress: number): number {
   // Keyframe checkpoints:
-  // p = 0.00 -> 0.08: Halo fades out in place, Arm stays fixed at 0.65
-  // p = 0.08 -> 0.333: Arm slides from 0.65 -> 0.28 (Stage 1 Neural EMG)
-  // p = 0.333 -> 0.666: Arm slides from 0.28 -> 0.70 (Stage 2 Kinematics)
-  // p = 0.666 -> 1.000: Arm slides from 0.70 -> 0.30 (Stage 3 Modular Socket)
-  const FADE_THRESHOLD = 0.08;
-  if (progress <= 0.333) {
-    if (progress <= FADE_THRESHOLD) {
+  // p = 0.000 -> 0.0667: Halo fades out in place. Arm holds firmly at 0.65.
+  // p = 0.0667 -> 0.3333: Arm slides from 0.65 -> 0.28 in 100% sync with text.
+  // p = 0.3333 -> 0.6667: Arm slides from 0.28 -> 0.70 (Stage 2 Kinematics).
+  // p = 0.6667 -> 1.0000: Arm slides from 0.70 -> 0.30 (Stage 3 Modular Socket).
+  if (progress <= 0.333333) {
+    if (progress <= FADE_CUTOFF_PROG) {
       return 0.65;
     }
-    const t = (progress - FADE_THRESHOLD) / (0.333 - FADE_THRESHOLD);
+    const t = (progress - FADE_CUTOFF_PROG) / (0.333333 - FADE_CUTOFF_PROG);
     const ease = t * t * (3 - 2 * t);
     return 0.65 + (0.28 - 0.65) * ease;
-  } else if (progress <= 0.666) {
-    const t = (progress - 0.333) / 0.333;
+  } else if (progress <= 0.666667) {
+    const t = (progress - 0.333333) / 0.333334;
     const ease = t * t * (3 - 2 * t);
     return 0.28 + (0.70 - 0.28) * ease;
   } else {
-    const t = Math.min((progress - 0.666) / 0.334, 1);
+    const t = Math.min((progress - 0.666667) / 0.333333, 1);
     const ease = t * t * (3 - 2 * t);
     return 0.70 + (0.30 - 0.70) * ease;
   }
 }
 
+const defaultGetFrameUrl = (index: number) =>
+  `${import.meta.env.BASE_URL}frames/frame_${String(index).padStart(4, '0')}.webp`;
+
 export default function ScrollFrameSequence({
   frameCount = 120,
-  getFrameUrl = (index) => `${import.meta.env.BASE_URL}frames/frame_${String(index).padStart(4, '0')}.jpg`,
+  getFrameUrl = defaultGetFrameUrl,
   className = 'fixed inset-0 pointer-events-none z-10',
 }: ScrollFrameSequenceProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const keyedCacheRef = useRef<Map<number, HTMLCanvasElement>>(new Map());
+  const haloCanvasRef = useRef<HTMLCanvasElement>(null);
+  const armCanvasRef = useRef<HTMLCanvasElement>(null);
   const imagesRef = useRef<HTMLImageElement[]>([]);
-  const lastDrawnImgRef = useRef<HTMLImageElement | null>(null);
+  const loadedFlagsRef = useRef<boolean[]>([]);
   const [firstLoaded, setFirstLoaded] = useState(false);
+  const getFrameUrlRef = useRef(getFrameUrl);
+  getFrameUrlRef.current = getFrameUrl;
 
-  // Helper to get or lazily compute 100% resolution keyed canvas once per frame
-  const getKeyedCanvas = (img: HTMLImageElement, frameIdx: number): HTMLCanvasElement => {
-    const cache = keyedCacheRef.current;
-    const existing = cache.get(frameIdx);
-    if (existing) return existing;
-
-    const w = img.naturalWidth || 1920;
-    const h = img.naturalHeight || 1080;
-    const c = document.createElement('canvas');
-    c.width = w;
-    c.height = h;
-    const cCtx = c.getContext('2d', { willReadFrequently: true });
-    if (!cCtx) return c;
-
-    cCtx.drawImage(img, 0, 0, w, h);
-    const imgData = cCtx.getImageData(0, 0, w, h);
-    const data32 = new Uint32Array(imgData.data.buffer);
-    const len = data32.length;
-
-    for (let i = 0; i < len; i++) {
-      const p = data32[i];
-      const r = p & 0xff;
-      const g = (p >> 8) & 0xff;
-      const b = (p >> 16) & 0xff;
-
-      if (r > 235 && g > 235 && b > 235) {
-        const minVal = Math.min(r, g, b);
-        if (minVal >= 252) {
-          data32[i] = 0;
-        } else {
-          const alpha = Math.round(((252 - minVal) / 17) * 255);
-          data32[i] = (p & 0x00ffffff) | (alpha << 24);
-        }
-      }
-    }
-
-    cCtx.putImageData(imgData, 0, 0);
-    cache.set(frameIdx, c);
-    return c;
-  };
-
-  // Pre-load and pre-decode all 120 frames into memory
+  // Progressive preloader: Phase 1 (Frame 1), Phase 2 (Keyframes across 0..119), Phase 3 (Remaining frames)
   useEffect(() => {
     let mounted = true;
     const images: HTMLImageElement[] = [];
-    let loadedCount = 0;
-
-    for (let i = 1; i <= frameCount; i++) {
-      const img = new Image();
-      img.src = getFrameUrl(i);
-
-      if (typeof img.decode === 'function') {
-        img.decode()
-          .then(() => {
-            if (!mounted) return;
-            loadedCount++;
-            if (loadedCount >= 1 && !firstLoaded) setFirstLoaded(true);
-          })
-          .catch(() => {
-            img.onload = () => {
-              if (!mounted) return;
-              loadedCount++;
-              if (loadedCount >= 1 && !firstLoaded) setFirstLoaded(true);
-            };
-          });
-      } else {
-        (img as HTMLImageElement).onload = () => {
-          if (!mounted) return;
-          loadedCount++;
-          if (loadedCount >= 1 && !firstLoaded) setFirstLoaded(true);
-        };
-      }
-
-      images.push(img);
-    }
+    const loadedFlags: boolean[] = new Array(frameCount).fill(false);
 
     imagesRef.current = images;
+    loadedFlagsRef.current = loadedFlags;
+
+    const loadSingleFrame = (idxZero: number, priorityHigh = false): Promise<void> => {
+      return new Promise((resolve) => {
+        if (!mounted) {
+          resolve();
+          return;
+        }
+
+        const img = new Image();
+        if (priorityHigh && 'fetchPriority' in img) {
+          (img as unknown as { fetchPriority?: string }).fetchPriority = 'high';
+        }
+
+        const onFinish = () => {
+          if (!mounted) return;
+          loadedFlags[idxZero] = true;
+          if (idxZero === 0 && !firstLoaded) {
+            setFirstLoaded(true);
+          }
+          resolve();
+        };
+
+        img.onload = () => {
+          if (typeof img.decode === 'function') {
+            img.decode().then(onFinish).catch(onFinish);
+          } else {
+            onFinish();
+          }
+        };
+        img.onerror = () => {
+          resolve();
+        };
+
+        img.src = getFrameUrlRef.current(idxZero + 1);
+        images[idxZero] = img;
+      });
+    };
+
+    // Allocate all image slots
+    for (let i = 0; i < frameCount; i++) {
+      images[i] = new Image();
+    }
+
+    // Step 1: Load 1st frame immediately for instantaneous display
+    loadSingleFrame(0, true).then(() => {
+      if (!mounted) return;
+
+      // Step 2: Load keyframe samples every 5 frames across the timeline for fast initial rotation responsiveness
+      const keyframes: number[] = [];
+      for (let i = 4; i < frameCount; i += 5) {
+        keyframes.push(i);
+      }
+      if (keyframes[keyframes.length - 1] !== frameCount - 1) {
+        keyframes.push(frameCount - 1);
+      }
+
+      Promise.all(keyframes.map((idx) => loadSingleFrame(idx, true))).then(() => {
+        if (!mounted) return;
+
+        // Step 3: Load all remaining frames in chunks
+        const remaining: number[] = [];
+        for (let i = 1; i < frameCount; i++) {
+          if (!loadedFlags[i]) {
+            remaining.push(i);
+          }
+        }
+
+        const BATCH_SIZE = 8;
+        let p = Promise.resolve();
+        for (let i = 0; i < remaining.length; i += BATCH_SIZE) {
+          const batch = remaining.slice(i, i + BATCH_SIZE);
+          p = p.then(() => {
+            if (!mounted) return;
+            return Promise.all(batch.map((idx) => loadSingleFrame(idx, false))).then(() => {});
+          });
+        }
+      });
+    });
 
     return () => {
       mounted = false;
     };
-  }, [frameCount, getFrameUrl]);
+  }, [frameCount]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d', { alpha: true });
-    if (!ctx) return;
+    const haloCanvas = haloCanvasRef.current;
+    const armCanvas = armCanvasRef.current;
+    if (!haloCanvas || !armCanvas) return;
+
+    const haloCtx = haloCanvas.getContext('2d');
+    const armCtx = armCanvas.getContext('2d', { alpha: true });
+    if (!haloCtx || !armCtx) return;
 
     let rafId: number;
     let currentFraction = 0;
     let targetFraction = 0;
-    let currentXPercent = 0.65;
     let currentOpacity = 1;
     let targetOpacity = 1;
 
     const handleResize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = window.innerWidth * dpr;
-      canvas.height = window.innerHeight * dpr;
-      canvas.style.width = `${window.innerWidth}px`;
-      canvas.style.height = `${window.innerHeight}px`;
-      ctx.scale(dpr, dpr);
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+
+      haloCanvas.width = w * dpr;
+      haloCanvas.height = h * dpr;
+      haloCanvas.style.width = `${w}px`;
+      haloCanvas.style.height = `${h}px`;
+      haloCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      armCanvas.width = w * dpr;
+      armCanvas.height = h * dpr;
+      armCanvas.style.width = `${w}px`;
+      armCanvas.style.height = `${h}px`;
+      armCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      armCtx.imageSmoothingEnabled = true;
+      armCtx.imageSmoothingQuality = 'high';
     };
+
     handleResize();
     window.addEventListener('resize', handleResize);
 
@@ -189,100 +216,111 @@ export default function ScrollFrameSequence({
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
 
+    // Helper: Find closest fully loaded frame without jumping or stalling
+    const getBestAvailableImage = (targetIndex: number): HTMLImageElement | null => {
+      const images = imagesRef.current;
+      const loadedFlags = loadedFlagsRef.current;
+      if (!images || images.length === 0) return null;
+
+      if (loadedFlags[targetIndex] && images[targetIndex]?.complete && images[targetIndex].naturalWidth > 0) {
+        return images[targetIndex];
+      }
+
+      // Search outward for closest loaded neighbor
+      for (let offset = 1; offset < frameCount; offset++) {
+        const prev = targetIndex - offset;
+        if (prev >= 0 && loadedFlags[prev] && images[prev]?.complete && images[prev].naturalWidth > 0) {
+          return images[prev];
+        }
+        const next = targetIndex + offset;
+        if (next < frameCount && loadedFlags[next] && images[next]?.complete && images[next].naturalWidth > 0) {
+          return images[next];
+        }
+      }
+
+      return images[0]?.complete && images[0].naturalWidth > 0 ? images[0] : null;
+    };
+
     const render = () => {
       rafId = requestAnimationFrame(render);
 
-      // Smooth continuous damping
+      // Smooth continuous damping (synchronized with text transitions)
       currentFraction += (targetFraction - currentFraction) * 0.14;
-      const targetXPercent = getContinuousTargetX(currentFraction);
-      currentXPercent += (targetXPercent - currentXPercent) * 0.14;
+      const currentXPercent = getContinuousTargetX(currentFraction);
       currentOpacity += (targetOpacity - currentOpacity) * 0.14;
 
-      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+
+      haloCtx.clearRect(0, 0, w, h);
+      armCtx.clearRect(0, 0, w, h);
 
       if (currentOpacity < 0.01) return;
 
-      const images = imagesRef.current;
-      if (images.length > 0) {
-        const frameIndex = Math.min(
-          images.length - 1,
-          Math.max(0, Math.floor(currentFraction * (images.length - 1)))
+      const totalFrames = frameCount;
+      let targetIndex = 0;
+      if (currentFraction <= FADE_CUTOFF_PROG) {
+        targetIndex = 0; // Arm holds locked at Frame 0 while Halo fades
+      } else {
+        const moveProg = (currentFraction - FADE_CUTOFF_PROG) / (1.0 - FADE_CUTOFF_PROG);
+        targetIndex = Math.min(
+          totalFrames - 1,
+          Math.max(0, Math.round(moveProg * (totalFrames - 1)))
         );
+      }
 
-        let activeImg = images[frameIndex];
-        if (!activeImg || !activeImg.complete || activeImg.naturalWidth === 0) {
-          activeImg = lastDrawnImgRef.current || images[0];
+      const activeImg = getBestAvailableImage(targetIndex);
+
+      if (activeImg && activeImg.naturalWidth > 0) {
+        const imgWidth = activeImg.naturalWidth;
+        const imgHeight = activeImg.naturalHeight;
+        const imgAspect = imgWidth / imgHeight;
+        const winAspect = w / h;
+
+        let drawWidth: number;
+        let drawHeight: number;
+
+        const isMobile = w < 768;
+        const scaleMultiplier = isMobile ? 0.75 : 0.88;
+
+        if (winAspect > imgAspect) {
+          drawHeight = Math.round(h * scaleMultiplier);
+          drawWidth = Math.round(drawHeight * imgAspect);
         } else {
-          lastDrawnImgRef.current = activeImg;
+          drawWidth = Math.round(w * scaleMultiplier);
+          drawHeight = Math.round(drawWidth / imgAspect);
         }
 
-        if (activeImg && activeImg.complete && activeImg.naturalWidth > 0) {
-          const imgWidth = activeImg.naturalWidth;
-          const imgHeight = activeImg.naturalHeight;
-          const imgAspect = imgWidth / imgHeight;
-          const winAspect = window.innerWidth / window.innerHeight;
+        const activeXRatio = isMobile ? 0.5 : currentXPercent;
+        const drawX = Math.round(w * activeXRatio - drawWidth / 2);
+        const drawY = Math.round((h - drawHeight) / 2 + (isMobile ? 0 : 20));
 
-          let drawWidth: number;
-          let drawHeight: number;
+        // 1. Draw Halo Backdrop directly on haloCanvas (Hero stage)
+        // Halo fades out completely from 0.0 -> FADE_CUTOFF_PROG while text & arm hold still
+        const haloProgress = Math.min(Math.max(currentFraction / FADE_CUTOFF_PROG, 0), 1);
+        const haloOpacity = Math.max(0, 1 - haloProgress) * currentOpacity;
 
-          const isMobile = window.innerWidth < 768;
-          const scaleMultiplier = isMobile ? 0.75 : 0.88;
+        if (haloOpacity > 0.01) {
+          const heroXRatio = isMobile ? 0.52 : 0.67;
+          const haloCenterX = Math.round(w * heroXRatio);
+          const haloCenterY = Math.round(drawY + drawHeight * 0.48);
+          const haloRadius = Math.round(drawHeight * 0.4031);
 
-          if (winAspect > imgAspect) {
-            drawHeight = window.innerHeight * scaleMultiplier;
-            drawWidth = drawHeight * imgAspect;
-          } else {
-            drawWidth = window.innerWidth * scaleMultiplier;
-            drawHeight = drawWidth / imgAspect;
-          }
-
-          const activeXRatio = isMobile ? 0.5 : currentXPercent;
-          const drawX = window.innerWidth * activeXRatio - drawWidth / 2;
-          const drawY = (window.innerHeight - drawHeight) / 2 + (isMobile ? 0 : 20);
-
-          // 1. Draw Halo Backdrop directly on canvas behind the 3D arm (Hero stage)
-          // Halo fades out completely in-place before the stage/arm slide begins (0.0 -> 0.08)
-          const haloProgress = Math.min(Math.max(currentFraction / 0.08, 0), 1);
-          const haloOpacity = Math.max(0, 1 - haloProgress) * currentOpacity;
-
-          if (haloOpacity > 0.01) {
-            // Static Hero position: halo stays in place and does not slide sideways
-            const heroXRatio = isMobile ? 0.52 : 0.67;
-            const haloCenterX = window.innerWidth * heroXRatio;
-            const haloCenterY = drawY + drawHeight * 0.48;
-            const haloRadius = Math.round(drawHeight * 0.4031);
-
-            ctx.save();
-            ctx.globalAlpha = haloOpacity;
-
-            // Clean Minimal Single Solid Halo Ring
-            ctx.beginPath();
-            ctx.arc(haloCenterX, haloCenterY, haloRadius, 0, Math.PI * 2);
-            ctx.strokeStyle = '#cbd5e1';
-            ctx.lineWidth = Math.max(18, Math.round(drawHeight * 0.03));
-            ctx.stroke();
-
-            ctx.restore();
-          }
-
-          // 2. Draw 3D Arm
-          if (haloOpacity > 0.01) {
-            // Instant 120fps GPU texture blit (cached offscreen canvas, 0ms CPU in render loop)
-            const keyedCanvas = getKeyedCanvas(activeImg, frameIndex);
-            ctx.save();
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            ctx.globalAlpha = Math.max(0, Math.min(currentOpacity, 1));
-            ctx.drawImage(keyedCanvas, drawX, drawY, drawWidth, drawHeight);
-            ctx.restore();
-          } else {
-            // Direct draw for smooth 120fps when halo is faded out
-            ctx.save();
-            ctx.globalAlpha = Math.max(0, Math.min(currentOpacity, 1));
-            ctx.drawImage(activeImg, drawX, drawY, drawWidth, drawHeight);
-            ctx.restore();
-          }
+          haloCtx.save();
+          haloCtx.globalAlpha = haloOpacity;
+          haloCtx.beginPath();
+          haloCtx.arc(haloCenterX, haloCenterY, haloRadius, 0, Math.PI * 2);
+          haloCtx.strokeStyle = '#cbd5e1';
+          haloCtx.lineWidth = Math.max(18, Math.round(drawHeight * 0.03));
+          haloCtx.stroke();
+          haloCtx.restore();
         }
+
+        // 2. Draw 3D Arm on armCanvas (solid single frame, 100% opaque, zero flickering)
+        armCtx.save();
+        armCtx.globalAlpha = Math.max(0, Math.min(currentOpacity, 1));
+        armCtx.drawImage(activeImg, drawX, drawY, drawWidth, drawHeight);
+        armCtx.restore();
       }
     };
 
@@ -293,13 +331,19 @@ export default function ScrollFrameSequence({
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', handleResize);
     };
-  }, [firstLoaded]);
+  }, [frameCount, firstLoaded]);
 
   return (
     <div className={className} aria-hidden="true">
+      {/* Background layer for Halo ring */}
       <canvas
-        ref={canvasRef}
-        className="w-full h-full block"
+        ref={haloCanvasRef}
+        className="absolute inset-0 w-full h-full block pointer-events-none"
+      />
+      {/* Foreground layer for 3D Arm with GPU multiply blend mode */}
+      <canvas
+        ref={armCanvasRef}
+        className="absolute inset-0 w-full h-full block pointer-events-none"
         style={{ mixBlendMode: 'multiply' }}
       />
     </div>

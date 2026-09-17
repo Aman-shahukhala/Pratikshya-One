@@ -33,10 +33,7 @@ export default function App() {
       <ScfoLayoutOverlay />
       
       {/* 3D Frame Sequence Scrubber (Layer z-[10]) - Dynamic left/right positioning */}
-      <ScrollFrameSequence
-        frameCount={120}
-        getFrameUrl={(index) => `${import.meta.env.BASE_URL}frames/frame_${String(index).padStart(4, '0')}.jpg`}
-      />
+      <ScrollFrameSequence frameCount={120} />
 
       <Navbar />
       <main className="relative z-20">

@@ -10,6 +10,7 @@ interface SectionInfo {
 }
 
 const NAV_OFFSET = 64; // Height of fixed navbar
+const SHOWCASE_IDS = new Set(['hero', 'neural-emg', 'articulation', 'socket-haptics']);
 
 export function usePointToPointScroll(sectionIds: string[], enabled = true) {
   const isScrollingRef = useRef(false);
@@ -47,6 +48,12 @@ export function usePointToPointScroll(sectionIds: string[], enabled = true) {
 
     const getCurrentSectionIndex = (sections: SectionInfo[]): number => {
       const scrollY = window.scrollY;
+
+      // In the showcase region (0 to 3.2 * window.innerHeight), index cleanly aligns with viewport multiples
+      if (scrollY <= window.innerHeight * 3.2) {
+        return Math.max(0, Math.min(Math.round(scrollY / window.innerHeight), 3));
+      }
+
       const viewportCenter = scrollY + window.innerHeight / 2;
 
       for (let i = 0; i < sections.length; i++) {
@@ -64,7 +71,7 @@ export function usePointToPointScroll(sectionIds: string[], enabled = true) {
       return 0;
     };
 
-    const smoothScrollTo = (targetY: number, duration = 550) => {
+    const smoothScrollTo = (targetY: number, duration = 850) => {
       const startY = window.scrollY;
       const diff = targetY - startY;
       if (Math.abs(diff) < 3) {
@@ -76,13 +83,14 @@ export function usePointToPointScroll(sectionIds: string[], enabled = true) {
       cancelAnimationFrame(rafIdRef.current);
 
       const startTime = performance.now();
-      // Silky quartic ease-out
-      const easeOutQuart = (x: number): number => 1 - Math.pow(1 - x, 4);
+      // Smooth Apple-style ease-in-out cubic
+      const easeInOutCubic = (x: number): number =>
+        x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
 
       const animate = (now: number) => {
         const elapsed = now - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        const eased = easeOutQuart(progress);
+        const eased = easeInOutCubic(progress);
 
         window.scrollTo(0, Math.round(startY + diff * eased));
 
@@ -91,8 +99,8 @@ export function usePointToPointScroll(sectionIds: string[], enabled = true) {
         } else {
           window.scrollTo(0, targetY);
           isScrollingRef.current = false;
-          // Short cooldown to absorb residual trackpad inertia ticks
-          cooldownUntilRef.current = Date.now() + 180;
+          // Cooldown to absorb residual trackpad inertia ticks
+          cooldownUntilRef.current = Date.now() + 240;
         }
       };
 
@@ -111,6 +119,9 @@ export function usePointToPointScroll(sectionIds: string[], enabled = true) {
       let targetY: number;
       if (position === 'bottom') {
         targetY = target.bottom - window.innerHeight;
+      } else if (SHOWCASE_IDS.has(target.id)) {
+        // Showcase slides (hero, neural-emg, articulation, socket-haptics) lock at exact full viewport multiples (0px offset)
+        targetY = target.top;
       } else {
         targetY = index === 0 ? 0 : target.top - NAV_OFFSET;
       }
@@ -144,28 +155,41 @@ export function usePointToPointScroll(sectionIds: string[], enabled = true) {
       const scrollY = window.scrollY;
       const viewportBottom = scrollY + window.innerHeight;
 
-      // Handle tall content sections (e.g. Health, Technology, Investors)
+      // 1. Hard-lock snapping for Showcase sections (0: Hero, 1: Part 01, 2: Part 02, 3: Part 03) and transition to Mission (4)
+      if (currentIdx <= 3) {
+        if (Math.abs(e.deltaY) < 14) return;
+        e.preventDefault();
+        if (e.deltaY > 0) {
+          // Hard lock to next checkpoint (0->1, 1->2, 2->3, 3->4 Mission)
+          scrollToSection(currentIdx + 1, 'top');
+        } else if (currentIdx > 0) {
+          // Hard lock to previous checkpoint (3->2, 2->1, 1->0 Hero)
+          scrollToSection(currentIdx - 1, 'top');
+        }
+        return;
+      }
+
+      // 2. Hard-lock transition from Mission (4) back up into Part 03 (3)
+      if (currentIdx === 4 && e.deltaY < -14 && scrollY <= currentSection.top - NAV_OFFSET + 30) {
+        e.preventDefault();
+        scrollToSection(3, 'top');
+        return;
+      }
+
+      // 3. Handle downstream tall content sections (e.g. Health, Technology, Investors)
       if (currentSection.isTall) {
         const isAtTop = scrollY <= currentSection.top - NAV_OFFSET + 20;
         const isAtBottom = viewportBottom >= currentSection.bottom - 20;
 
         if (e.deltaY > 0) {
-          // Scrolling down: if not at the bottom of the section, allow native scroll
-          if (!isAtBottom) {
-            return;
-          }
-          // At bottom and scrolling down deliberately -> snap to next section
+          if (!isAtBottom) return;
           if (Math.abs(e.deltaY) < 20) return;
           if (currentIdx < sections.length - 1) {
             e.preventDefault();
             scrollToSection(currentIdx + 1, 'top');
           }
         } else if (e.deltaY < 0) {
-          // Scrolling up: if not at the top of the section, allow native scroll
-          if (!isAtTop) {
-            return;
-          }
-          // At top and scrolling up deliberately -> snap to previous section
+          if (!isAtTop) return;
           if (Math.abs(e.deltaY) < 20) return;
           if (currentIdx > 0) {
             e.preventDefault();
@@ -176,7 +200,7 @@ export function usePointToPointScroll(sectionIds: string[], enabled = true) {
         return;
       }
 
-      // Handle slide-like showcase sections (~100vh)
+      // 4. Handle other downstream slide sections
       if (Math.abs(e.deltaY) < 18) return;
 
       if (e.deltaY > 0) {
@@ -215,13 +239,33 @@ export function usePointToPointScroll(sectionIds: string[], enabled = true) {
       }
     };
 
+    // Auto-settle timer on scroll stop to guarantee no in-between states
+    let settleTimer: number;
+    const handleScrollSettle = () => {
+      clearTimeout(settleTimer);
+      if (isScrollingRef.current) return;
+      settleTimer = window.setTimeout(() => {
+        const scrollY = window.scrollY;
+        if (scrollY <= window.innerHeight * 3.2 && !isScrollingRef.current) {
+          const nearestSlide = Math.max(0, Math.min(Math.round(scrollY / window.innerHeight), 3));
+          const targetY = nearestSlide * window.innerHeight;
+          if (Math.abs(scrollY - targetY) > 8 && Math.abs(scrollY - targetY) < window.innerHeight * 0.48) {
+            smoothScrollTo(targetY, 380);
+          }
+        }
+      }, 140);
+    };
+
     window.addEventListener('wheel', handleWheel, { passive: false });
     window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('scroll', handleScrollSettle, { passive: true });
 
     return () => {
+      clearTimeout(settleTimer);
       cancelAnimationFrame(rafIdRef.current);
       window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('scroll', handleScrollSettle);
     };
   }, [sectionIds, enabled]);
 }
