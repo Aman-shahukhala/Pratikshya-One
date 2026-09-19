@@ -34,23 +34,23 @@ const footerLinks = [
 export default function Footer() {
   return (
     <footer id="contact" className="relative border-t border-slate-200 bg-white overflow-hidden text-slate-900 scroll-mt-20">
-      <div className="relative max-w-7xl mx-auto px-6 sm:px-12 lg:px-16 py-12 sm:py-16">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-8 lg:px-16 py-10 sm:py-16">
         {/* CTA (SCFO Project Inquiry Style) */}
         <Reveal>
-          <div className="text-center mb-14 max-w-3xl mx-auto">
-            <p className="text-[11px] font-mono tracking-[0.25em] uppercase text-slate-400 mb-3">
+          <div className="text-center mb-10 sm:mb-14 max-w-3xl mx-auto">
+            <p className="text-[10px] sm:text-[11px] font-mono tracking-[0.25em] uppercase text-slate-400 mb-3">
               07 &nbsp; CLINICAL INQUIRY &amp; CONTACT
             </p>
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-light tracking-tight text-slate-900 mb-4">
+            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-light tracking-tight text-slate-900 mb-3 sm:mb-4">
               Ready to <span className="font-sans font-normal">restore motion?</span>
             </h2>
-            <p className="text-base sm:text-lg text-slate-600 max-w-xl mx-auto mb-8 leading-relaxed">
+            <p className="text-sm sm:text-lg text-slate-600 max-w-xl mx-auto mb-6 sm:mb-8 leading-relaxed">
               Whether you're an investor, a rehabilitation clinic director, or an orthotics partner —
               connect with our clinical engineering team.
             </p>
             <a
               href="mailto:clinical@pratikshyahealth.com"
-              className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full bg-slate-900 text-white text-xs font-mono tracking-widest uppercase hover:bg-black transition-all duration-200 hover:scale-105 shadow-md"
+              className="inline-flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 sm:py-4 rounded-full bg-slate-900 text-white text-xs font-mono tracking-widest uppercase hover:bg-black transition-all duration-200 active:scale-95 shadow-md w-full sm:w-auto"
             >
               <Mail size={15} />
               START A CLINICAL INQUIRY
@@ -59,13 +59,13 @@ export default function Footer() {
         </Reveal>
 
         {/* Links Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-12 border-t border-slate-100 pt-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-12 mb-10 sm:mb-12 border-t border-slate-100 pt-10 sm:pt-12">
           {/* Brand */}
           <div>
-            <p className="text-xs font-mono tracking-[0.2em] font-semibold text-slate-900 uppercase mb-4">
+            <p className="text-xs font-mono tracking-[0.2em] font-semibold text-slate-900 uppercase mb-3 sm:mb-4">
               PRATIKSHYA HEALTH
             </p>
-            <p className="text-xs text-slate-500 leading-relaxed mb-6">
+            <p className="text-xs text-slate-500 leading-relaxed mb-4 sm:mb-6">
               Restoring Motion. Redefining Human Potential through adaptive bionic neuroprosthetics.
             </p>
             <div className="flex items-start gap-2 text-xs text-slate-500 font-mono">
@@ -76,15 +76,15 @@ export default function Footer() {
 
           {footerLinks.map((col) => (
             <div key={col.title}>
-              <p className="text-[11px] font-mono font-semibold text-slate-900 uppercase tracking-widest mb-5">
+              <p className="text-[11px] font-mono font-semibold text-slate-900 uppercase tracking-widest mb-3 sm:mb-5">
                 {col.title}
               </p>
-              <ul className="space-y-2.5">
+              <ul className="space-y-2 sm:space-y-2.5">
                 {col.links.map((link) => (
                   <li key={link.label}>
                     <a
                       href={link.href}
-                      className="text-xs text-slate-500 hover:text-slate-900 transition-colors duration-200"
+                      className="text-xs text-slate-500 hover:text-slate-900 transition-colors duration-200 block py-0.5"
                     >
                       {link.label}
                     </a>
@@ -96,7 +96,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-slate-200 text-[11px] font-mono text-slate-400">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 sm:pt-8 border-t border-slate-200 text-[10px] sm:text-[11px] font-mono text-slate-400 text-center sm:text-left">
           <p>
             &copy; 2026 PRATIKSHYA HEALTH PVT. LTD. ALL RIGHTS RESERVED.
           </p>
@@ -106,7 +106,7 @@ export default function Footer() {
             </p>
             <a
               href="#hero"
-              className="flex items-center gap-1.5 text-slate-600 hover:text-slate-900 transition-colors"
+              className="flex items-center gap-1.5 text-slate-600 hover:text-slate-900 transition-colors py-1"
             >
               BACK TO TOP
               <ArrowUp size={12} />

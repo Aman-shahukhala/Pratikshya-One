@@ -281,19 +281,32 @@ export default function ScrollFrameSequence({
         let drawHeight: number;
 
         const isMobile = w < 768;
-        const scaleMultiplier = isMobile ? 0.75 : 0.88;
+        const isTablet = w >= 768 && w < 1024;
 
-        if (winAspect > imgAspect) {
-          drawHeight = Math.round(h * scaleMultiplier);
+        if (isMobile) {
+          // On mobile portrait: Frame aspect is 16:9. Scale up prominently by viewport height
+          drawHeight = Math.round(Math.min(h * 0.46, 430));
           drawWidth = Math.round(drawHeight * imgAspect);
+          if (drawHeight < 280 && h >= 480) {
+            drawHeight = 280;
+            drawWidth = Math.round(drawHeight * imgAspect);
+          }
         } else {
-          drawWidth = Math.round(w * scaleMultiplier);
-          drawHeight = Math.round(drawWidth / imgAspect);
+          const scaleMultiplier = isTablet ? 0.75 : 0.88;
+          if (winAspect > imgAspect) {
+            drawHeight = Math.round(h * scaleMultiplier);
+            drawWidth = Math.round(drawHeight * imgAspect);
+          } else {
+            drawWidth = Math.round(w * scaleMultiplier);
+            drawHeight = Math.round(drawWidth / imgAspect);
+          }
         }
 
-        const activeXRatio = isMobile ? 0.5 : currentXPercent;
+        const activeXRatio = isMobile ? 0.5 : isTablet ? (currentXPercent > 0.5 ? 0.65 : 0.35) : currentXPercent;
         const drawX = Math.round(w * activeXRatio - drawWidth / 2);
-        const drawY = Math.round((h - drawHeight) / 2 + (isMobile ? 0 : 20));
+        const drawY = isMobile
+          ? Math.round(h * 0.13 + 12)
+          : Math.round((h - drawHeight) / 2 + 20);
 
         // 1. Draw Halo Backdrop directly on haloCanvas (Hero stage)
         // Halo fades out completely from 0.0 -> FADE_CUTOFF_PROG while text & arm hold still
@@ -301,7 +314,7 @@ export default function ScrollFrameSequence({
         const haloOpacity = Math.max(0, 1 - haloProgress) * currentOpacity;
 
         if (haloOpacity > 0.01) {
-          const heroXRatio = isMobile ? 0.52 : 0.67;
+          const heroXRatio = isMobile ? 0.5 : isTablet ? 0.62 : 0.67;
           const haloCenterX = Math.round(w * heroXRatio);
           const haloCenterY = Math.round(drawY + drawHeight * 0.48);
           const haloRadius = Math.round(drawHeight * 0.4031);
@@ -311,7 +324,7 @@ export default function ScrollFrameSequence({
           haloCtx.beginPath();
           haloCtx.arc(haloCenterX, haloCenterY, haloRadius, 0, Math.PI * 2);
           haloCtx.strokeStyle = '#cbd5e1';
-          haloCtx.lineWidth = Math.max(18, Math.round(drawHeight * 0.03));
+          haloCtx.lineWidth = Math.max(14, Math.round(drawHeight * 0.03));
           haloCtx.stroke();
           haloCtx.restore();
         }

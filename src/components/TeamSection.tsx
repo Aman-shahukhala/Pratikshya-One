@@ -17,13 +17,13 @@ export default function TeamSection() {
 
   return (
     <section id="team" className="relative py-12 lg:py-16 overflow-hidden bg-white border-t border-slate-200/80 scroll-mt-20">
-      <div className="max-w-7xl mx-auto px-6 sm:px-12 lg:px-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-16">
         <Reveal>
-          <div className="text-center mb-10">
-            <p className="text-[11px] font-mono tracking-[0.25em] uppercase text-slate-400 mb-3">
+          <div className="text-center mb-8 sm:mb-10">
+            <p className="text-[10px] sm:text-[11px] font-mono tracking-[0.25em] uppercase text-slate-400 mb-3">
               05 &nbsp; STUDIO &amp; LEADERSHIP
             </p>
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-light tracking-tight text-slate-900">
+            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-light tracking-tight text-slate-900">
               Built by Computer Science innovators, <br />
               <span className="font-sans font-normal">for human independence.</span>
             </h2>
@@ -32,8 +32,8 @@ export default function TeamSection() {
 
         {/* Team image */}
         <Reveal variant="scale">
-          <div className="relative rounded-2xl overflow-hidden mb-10 border border-slate-200 shadow-md bg-slate-900">
-            <div className="overflow-hidden h-[350px] sm:h-[450px]">
+          <div className="relative rounded-2xl overflow-hidden mb-8 sm:mb-10 border border-slate-200 shadow-md bg-slate-900">
+            <div className="overflow-hidden h-[260px] sm:h-[350px] lg:h-[450px]">
               <img
                 ref={imgRef}
                 src={TEAM_IMAGE}
@@ -42,8 +42,8 @@ export default function TeamSection() {
               />
             </div>
             <div className="absolute inset-0 bg-black/40" />
-            <div className="absolute bottom-0 left-0 right-0 p-8 sm:p-12 text-center text-white">
-              <p className="text-lg sm:text-xl font-light max-w-2xl mx-auto">
+            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-12 text-center text-white">
+              <p className="text-sm sm:text-xl font-light max-w-2xl mx-auto leading-relaxed">
                 Computer Science students, AI developers, and robotics enthusiasts — innovating
                 from Kathmandu, Nepal.
               </p>
@@ -52,7 +52,7 @@ export default function TeamSection() {
         </Reveal>
 
         {/* Team grid: 2 on top, 3 on bottom with equal sizing */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 sm:gap-6 items-stretch">
           {team.map((member, i) => {
             const layoutClasses =
               i === 0
@@ -67,12 +67,12 @@ export default function TeamSection() {
 
             return (
               <Reveal key={member.name} delay={i * 100} className={`h-full w-full ${layoutClasses}`}>
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-8 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 hover:-translate-y-1 h-full flex flex-col justify-between">
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 hover:-translate-y-1 h-full flex flex-col justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-slate-900 mb-1">{member.name}</h3>
-                    <p className="text-xs font-mono uppercase tracking-wider text-blue-600 font-semibold mb-3">{member.role}</p>
+                    <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-1">{member.name}</h3>
+                    <p className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-blue-600 font-semibold mb-2.5 sm:mb-3">{member.role}</p>
                   </div>
-                  <p className="text-sm text-slate-600 leading-relaxed mt-2">{member.bg}</p>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mt-2">{member.bg}</p>
                 </div>
               </Reveal>
             );

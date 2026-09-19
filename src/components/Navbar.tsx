@@ -43,27 +43,37 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    if (!menuOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    if (menuOpen) {
+      document.body.style.overflow = 'hidden';
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') setMenuOpen(false);
+      };
+      window.addEventListener('keydown', onKey);
+      return () => {
+        document.body.style.overflow = '';
+        window.removeEventListener('keydown', onKey);
+      };
+    } else {
+      document.body.style.overflow = '';
+    }
   }, [menuOpen]);
 
   return (
     <>
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled
-            ? 'bg-white/90 backdrop-blur-xl border-b border-slate-200/80 shadow-xs'
+          scrolled || menuOpen
+            ? 'bg-white/95 backdrop-blur-xl border-b border-slate-200/80 shadow-xs'
             : 'bg-transparent border-b border-transparent'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-6 sm:px-12 lg:px-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-16">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <a
               href="#hero"
-              className="text-xs font-mono tracking-[0.2em] font-semibold text-slate-900 hover:text-black uppercase"
+              onClick={() => setMenuOpen(false)}
+              className="text-xs font-mono tracking-[0.2em] font-semibold text-slate-900 hover:text-black uppercase py-2"
             >
               PRATIKSHYA HEALTH
             </a>
@@ -74,7 +84,7 @@ export default function Navbar() {
                 <a
                   key={link.href}
                   href={link.href}
-                  className="text-[11px] font-mono tracking-[0.15em] text-slate-600 hover:text-slate-900 transition-colors duration-200"
+                  className="text-[11px] font-mono tracking-[0.15em] text-slate-600 hover:text-slate-900 transition-colors duration-200 py-1"
                 >
                   {link.label}
                 </a>
@@ -91,13 +101,14 @@ export default function Navbar() {
               </a>
             </div>
 
-            {/* Mobile Toggle */}
+            {/* Mobile Toggle with 44px min touch target */}
             <button
-              className="md:hidden text-slate-900 p-1"
+              className="md:hidden text-slate-900 w-11 h-11 flex items-center justify-center -mr-2 rounded-lg active:bg-slate-100 transition-colors"
               onClick={() => setMenuOpen(!menuOpen)}
-              aria-label="Toggle menu"
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
             >
-              {menuOpen ? <X size={20} /> : <Menu size={20} />}
+              {menuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
         </div>
@@ -112,16 +123,20 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile menu */}
+      {/* Mobile menu modal */}
       {menuOpen && (
-        <div className="fixed inset-0 z-40 md:hidden bg-white/98 backdrop-blur-2xl pt-24 px-8" role="dialog" aria-modal="true">
-          <div className="flex flex-col items-center gap-8">
+        <div
+          className="fixed inset-0 z-40 md:hidden bg-white/98 backdrop-blur-2xl pt-24 pb-12 px-6 flex flex-col justify-between overflow-y-auto"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="flex flex-col items-center gap-6 pt-4">
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
                 onClick={() => setMenuOpen(false)}
-                className="text-2xl font-mono tracking-wider text-slate-800 hover:text-slate-900 transition-colors"
+                className="text-xl sm:text-2xl font-mono tracking-wider text-slate-800 hover:text-slate-900 transition-colors py-2 px-4 rounded-lg active:bg-slate-100"
               >
                 {link.label}
               </a>
@@ -129,10 +144,16 @@ export default function Navbar() {
             <a
               href="#contact"
               onClick={() => setMenuOpen(false)}
-              className="text-sm font-mono tracking-widest uppercase px-6 py-3 rounded-full border border-slate-900 bg-slate-900 text-white mt-4"
+              className="text-xs font-mono tracking-widest uppercase px-8 py-3.5 rounded-full border border-slate-900 bg-slate-900 text-white mt-4 shadow-sm active:scale-95 transition-transform"
             >
               CLINICAL INQUIRY
             </a>
+          </div>
+
+          <div className="text-center pt-8 border-t border-slate-100">
+            <p className="text-[10px] font-mono tracking-widest text-slate-400 uppercase">
+              Kathmandu · Global Bionics
+            </p>
           </div>
         </div>
       )}
