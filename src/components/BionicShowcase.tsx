@@ -173,7 +173,7 @@ export default function BionicShowcase() {
             <div className="max-w-xl">
               {/* Index tag — JetBrains Mono */}
               <p className="text-[10px] font-mono tracking-[0.3em] uppercase text-slate-400 mb-10">
-                01 &mdash; Neuroprosthetics
+                00 &mdash; Neuroprosthetics
               </p>
 
               {/* Display headline */}

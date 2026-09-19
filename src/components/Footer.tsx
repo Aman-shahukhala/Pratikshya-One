@@ -34,17 +34,17 @@ const footerLinks = [
 export default function Footer() {
   return (
     <footer id="contact" className="relative border-t border-slate-200 bg-white overflow-hidden text-slate-900 scroll-mt-20">
-      <div className="relative max-w-7xl mx-auto px-6 sm:px-12 lg:px-16 py-16 sm:py-20">
+      <div className="relative max-w-7xl mx-auto px-6 sm:px-12 lg:px-16 py-12 sm:py-16">
         {/* CTA (SCFO Project Inquiry Style) */}
         <Reveal>
-          <div className="text-center mb-24 max-w-3xl mx-auto">
-            <p className="text-[11px] font-mono tracking-[0.25em] uppercase text-slate-400 mb-4">
-              08 &nbsp; CLINICAL INQUIRY &amp; CONTACT
+          <div className="text-center mb-14 max-w-3xl mx-auto">
+            <p className="text-[11px] font-mono tracking-[0.25em] uppercase text-slate-400 mb-3">
+              07 &nbsp; CLINICAL INQUIRY &amp; CONTACT
             </p>
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-light tracking-tight text-slate-900 mb-6">
+            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-light tracking-tight text-slate-900 mb-4">
               Ready to <span className="font-sans font-normal">restore motion?</span>
             </h2>
-            <p className="text-base sm:text-lg text-slate-600 max-w-xl mx-auto mb-10 leading-relaxed">
+            <p className="text-base sm:text-lg text-slate-600 max-w-xl mx-auto mb-8 leading-relaxed">
               Whether you're an investor, a rehabilitation clinic director, or an orthotics partner —
               connect with our clinical engineering team.
             </p>
@@ -59,7 +59,7 @@ export default function Footer() {
         </Reveal>
 
         {/* Links Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-20 border-t border-slate-100 pt-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-12 border-t border-slate-100 pt-12">
           {/* Brand */}
           <div>
             <p className="text-xs font-mono tracking-[0.2em] font-semibold text-slate-900 uppercase mb-4">

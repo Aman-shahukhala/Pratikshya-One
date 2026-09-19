@@ -14,17 +14,17 @@ const platform = [
 
 export default function TechnologySection() {
   return (
-    <section id="technology" className="relative py-20 lg:py-28 overflow-hidden bg-white border-t border-slate-200/80 scroll-mt-20">
+    <section id="technology" className="relative py-12 lg:py-16 overflow-hidden bg-white border-t border-slate-200/80 scroll-mt-20">
       <div className="relative max-w-7xl mx-auto px-6 sm:px-12 lg:px-16">
         <Reveal>
-          <div className="text-center mb-16">
-            <p className="text-[11px] font-mono tracking-[0.25em] uppercase text-blue-600 mb-4 font-semibold">
-              04 &nbsp; TECHNOLOGY PLATFORM
+          <div className="text-center mb-10">
+            <p className="text-[11px] font-mono tracking-[0.25em] uppercase text-blue-600 mb-3 font-semibold">
+              03 &nbsp; TECHNOLOGY PLATFORM
             </p>
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-light tracking-tight text-slate-900">
               Engineered for the human body. <span className="font-sans font-normal">Neural precision.</span>
             </h2>
-            <p className="mt-6 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto">
+            <p className="mt-4 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto">
               Our proprietary hardware and software stack translates subtle muscular
               biosignals into fluid, multi-articulating bionic motion with sub-50ms latency.
             </p>
@@ -33,7 +33,7 @@ export default function TechnologySection() {
 
         {/* Cinematic circuit image */}
         <Reveal variant="scale">
-          <div className="relative rounded-2xl overflow-hidden mb-16 border border-slate-200 shadow-md bg-slate-900">
+          <div className="relative rounded-2xl overflow-hidden mb-10 border border-slate-200 shadow-md bg-slate-900">
             <img
               src={TECH_IMAGE}
               alt="Technology platform circuit board"

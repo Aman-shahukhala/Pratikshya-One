@@ -20,17 +20,17 @@ const maxRevenue = 85.0;
 
 export default function InvestorSection() {
   return (
-    <section id="investors" className="relative py-20 lg:py-28 overflow-hidden bg-slate-50/80 backdrop-blur-sm border-t border-slate-200/80 scroll-mt-20">
+    <section id="investors" className="relative py-12 lg:py-16 overflow-hidden bg-slate-50/80 backdrop-blur-sm border-t border-slate-200/80 scroll-mt-20">
       <div className="relative max-w-7xl mx-auto px-6 sm:px-12 lg:px-16">
         <Reveal>
-          <div className="text-center mb-16">
-            <p className="text-[11px] font-mono tracking-[0.25em] uppercase text-slate-400 mb-4">
-              07 &nbsp; SERIES A CAPITALIZATION
+          <div className="text-center mb-10">
+            <p className="text-[11px] font-mono tracking-[0.25em] uppercase text-slate-400 mb-3">
+              06 &nbsp; SERIES A CAPITALIZATION
             </p>
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-light tracking-tight text-slate-900">
               Raising <span className="font-sans font-normal">$32M</span>
             </h2>
-            <p className="mt-6 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto">
+            <p className="mt-4 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto">
               To complete medical device clinical validation, scale ISO 13485
               manufacturing in Nepal, and establish clinical distribution networks
               across rehabilitation centers globally.
@@ -38,7 +38,7 @@ export default function InvestorSection() {
           </div>
         </Reveal>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
           {/* Use of funds */}
           <Reveal variant="left">
             <div className="bg-white border border-slate-200/80 rounded-2xl p-8 shadow-sm h-full">

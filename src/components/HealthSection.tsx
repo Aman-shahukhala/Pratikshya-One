@@ -26,18 +26,18 @@ export default function HealthSection() {
   const imgRef = useParallax<HTMLImageElement>(0.12);
 
   return (
-    <section id="health" className="relative py-20 lg:py-28 overflow-hidden bg-white border-t border-slate-200/80 scroll-mt-20">
+    <section id="health" className="relative py-12 lg:py-16 overflow-hidden bg-white border-t border-slate-200/80 scroll-mt-20">
       <div className="max-w-7xl mx-auto px-6 sm:px-12 lg:px-16">
         {/* Section header */}
         <Reveal>
-          <div className="text-center mb-20">
-            <p className="text-[11px] font-mono tracking-[0.25em] uppercase text-emerald-600 mb-4 font-semibold">
+          <div className="text-center mb-12">
+            <p className="text-[11px] font-mono tracking-[0.25em] uppercase text-emerald-600 mb-3 font-semibold">
               02 &nbsp; BIONIC HEALTHCARE DIVISION
             </p>
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-light tracking-tight text-slate-900">
               The <span className="font-sans font-normal">Pratikshya One</span>
             </h2>
-            <p className="mt-6 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto">
+            <p className="mt-4 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto">
               Near-natural physiological dexterity at a fraction of the cost. A neuro-adaptive
               bionic prosthetic arm engineered to restore independence.
             </p>
@@ -46,7 +46,7 @@ export default function HealthSection() {
 
         {/* Cinematic image showcase */}
         <Reveal variant="scale">
-          <div className="relative rounded-2xl overflow-hidden mb-20 border border-slate-200 shadow-md bg-white">
+          <div className="relative rounded-2xl overflow-hidden mb-12 border border-slate-200 shadow-md bg-white">
             <div className="overflow-hidden h-[420px] sm:h-[500px]">
               <img
                 ref={imgRef}
@@ -68,7 +68,7 @@ export default function HealthSection() {
         </Reveal>
 
         {/* Spec cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-20">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
           {specs.map((spec, i) => (
             <Reveal key={spec.label} delay={i * 100}>
               <div className="bg-white border border-slate-200/80 rounded-xl p-6 text-center shadow-xs hover:shadow-md hover:border-slate-300 transition-all duration-300 hover:-translate-y-1">
@@ -82,7 +82,7 @@ export default function HealthSection() {
         </div>
 
         {/* Two-column: modular socket + tech stack with solid card wrap for 3D clearance */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center mb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center mb-12">
           <Reveal variant="left">
             <div className="relative rounded-xl overflow-hidden h-[400px] border border-slate-200 shadow-sm">
               <img

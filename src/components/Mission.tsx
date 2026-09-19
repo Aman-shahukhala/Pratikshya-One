@@ -3,16 +3,16 @@ import Reveal from './Reveal';
 
 export default function Mission() {
   return (
-    <section id="mission" className="relative py-20 lg:py-28 overflow-hidden bg-slate-50/80 backdrop-blur-sm border-t border-slate-200/80 scroll-mt-20">
+    <section id="mission" className="relative py-12 lg:py-16 overflow-hidden bg-slate-50/80 backdrop-blur-sm border-t border-slate-200/80 scroll-mt-20">
       <div className="relative max-w-5xl mx-auto px-6 sm:px-12 text-center">
         <Reveal>
-          <p className="text-[11px] font-mono tracking-[0.25em] uppercase text-slate-400 mb-4 font-semibold">
+          <p className="text-[11px] font-mono tracking-[0.25em] uppercase text-slate-400 mb-3 font-semibold">
             01 &nbsp; OUR MISSION
           </p>
         </Reveal>
 
         <Reveal delay={150}>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight leading-tight text-slate-900 mb-8">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight leading-tight text-slate-900 mb-6">
             Make advanced, intuitive bionic neuroprosthetics{" "}
             <span className="font-sans font-normal text-slate-900">accessible and life-restoring.</span>
           </h2>
@@ -26,7 +26,7 @@ export default function Mission() {
         </Reveal>
 
         <Reveal delay={450}>
-          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {[
               {
                 icon: Activity,

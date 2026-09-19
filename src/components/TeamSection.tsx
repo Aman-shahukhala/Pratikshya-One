@@ -16,12 +16,12 @@ export default function TeamSection() {
   const imgRef = useParallax<HTMLImageElement>(0.12);
 
   return (
-    <section id="team" className="relative py-20 lg:py-28 overflow-hidden bg-white border-t border-slate-200/80 scroll-mt-20">
+    <section id="team" className="relative py-12 lg:py-16 overflow-hidden bg-white border-t border-slate-200/80 scroll-mt-20">
       <div className="max-w-7xl mx-auto px-6 sm:px-12 lg:px-16">
         <Reveal>
-          <div className="text-center mb-16">
-            <p className="text-[11px] font-mono tracking-[0.25em] uppercase text-slate-400 mb-4">
-              06 &nbsp; STUDIO &amp; LEADERSHIP
+          <div className="text-center mb-10">
+            <p className="text-[11px] font-mono tracking-[0.25em] uppercase text-slate-400 mb-3">
+              05 &nbsp; STUDIO &amp; LEADERSHIP
             </p>
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-light tracking-tight text-slate-900">
               Built by engineers &amp; clinicians, <br />
@@ -32,7 +32,7 @@ export default function TeamSection() {
 
         {/* Team image */}
         <Reveal variant="scale">
-          <div className="relative rounded-2xl overflow-hidden mb-16 border border-slate-200 shadow-md bg-slate-900">
+          <div className="relative rounded-2xl overflow-hidden mb-10 border border-slate-200 shadow-md bg-slate-900">
             <div className="overflow-hidden h-[350px] sm:h-[450px]">
               <img
                 ref={imgRef}
@@ -69,8 +69,7 @@ export default function TeamSection() {
               <h3 className="text-lg font-semibold text-slate-900 mb-1">Advisory Board</h3>
               <p className="text-xs font-mono uppercase tracking-wider text-emerald-600 font-semibold mb-3">Clinical &amp; Regulatory</p>
               <p className="text-sm text-slate-600 leading-relaxed">
-                Nepal DDA regulatory advisor, rehabilitation medicine specialist,
-                licensed prosthetics director, and patient advocacy representatives.
+              licensed prosthetics director, and patient advocacy representatives.
               </p>
             </div>
           </Reveal>
